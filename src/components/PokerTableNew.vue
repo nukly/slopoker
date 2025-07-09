@@ -13,6 +13,15 @@
         </div>
         
         <div class="join-section">
+          <!-- Connection Status -->
+          <div class="connection-status" :class="{ 'connected': socketService.connected.value }">
+            <div class="status-indicator">
+              <span v-if="socketService.connected.value" class="status-dot connected"></span>
+              <span v-else class="status-dot disconnected"></span>
+              {{ socketService.connected.value ? 'Connected' : 'Connecting...' }}
+            </div>
+          </div>
+          
           <div class="input-group">
             <input 
               v-model="playerName" 
@@ -24,7 +33,7 @@
             />
             <button 
               @click="handleJoinGame" 
-              :disabled="!playerName.trim()"
+              :disabled="!playerName.trim() || !socketService.connected.value"
               class="btn btn-join"
             >
               <span class="btn-text">Join Table</span>
@@ -176,7 +185,7 @@
             <div class="status-icon">🏆</div>
             <div class="status-text">
               <div v-if="gameState.winner" class="status-title">
-                {{ gameState.winner.name }} wins ${{ gameState.winner.pot?.toLocaleString() }}!
+                {{ gameState.winner }} wins ${{ gameState.winAmount?.toLocaleString() }}!
               </div>
               <div v-else-if="getConnectedPlayers.filter(p => !p.folded).length === 1" class="status-title">
                 {{ getConnectedPlayers.filter(p => !p.folded)[0].name }} wins ${{ pot.toLocaleString() }}!
@@ -214,7 +223,7 @@
           </div>
         </div>
 
-        <!-- Action Buttons (only show for current player when it's their turn and they're not all-in) -->
+        <!-- Action Buttons -->
         <div v-if="currentPlayer && currentPlayer.socketId === currentPlayerId && gameStarted && (myPlayer?.chips || 0) > 0" class="action-buttons">
           <div class="action-row">
             <!-- Primary Actions -->
@@ -329,23 +338,21 @@ import { useSocket } from '../services/socket'
 import PlayingCard from './PlayingCard.vue'
 import PlayerSeat from './PlayerSeat.vue'
 
-const { 
-  socketService,
-  connect,
-  joinRoom,
-  leaveRoom,
-  playerAction,
-  rebuy
-} = useSocket()
+// Socket service setup
+const socketService = useSocket()
+const { joinRoom, leaveRoom, playerAction, rebuy } = socketService
 
+// Reactive data
 const playerName = ref('')
-const roomId = ref('room1') // Default room
-const raiseAmount = ref(20)
+const roomId = ref('room1') // Default room for now
+const raiseAmount = ref(0)
 const rebuyAmount = ref(1000)
 
-// Connect to server when component mounts
+// Lifecycle
 onMounted(() => {
-  connect()
+  // Initialize socket connection
+  console.log('Initializing socket connection...')
+  socketService.connect()
 })
 
 onUnmounted(() => {
@@ -369,13 +376,20 @@ const gamePhase = computed(() => gameState.value.phase)
 const communityCards = computed(() => gameState.value.communityCards)
 const currentPlayerIndex = computed(() => gameState.value.currentPlayerIndex)
 const bigBlind = computed(() => 20) // Default big blind value
-const playerInRoom = computed(() => myPlayer.value !== null)
+const playerInRoom = computed(() => {
+  const myPlayerExists = myPlayer.value !== null
+  const hasRoom = socketService.currentRoom.value !== null
+  const isConnected = socketService.connected.value
+  console.log('playerInRoom check:', { myPlayerExists, hasRoom, isConnected, myPlayer: myPlayer.value, currentRoom: socketService.currentRoom.value })
+  return myPlayerExists && hasRoom && isConnected
+})
 
 // Actions
 const handleJoinGame = () => {
   if (playerName.value.trim() && roomId.value.trim()) {
     console.log(`Joining game: ${playerName.value.trim()} in room ${roomId.value.trim()}`)
-    joinRoom(roomId.value.trim(), playerName.value.trim())
+    const joinResult = joinRoom(roomId.value.trim(), playerName.value.trim())
+    console.log('Join room result:', joinResult)
   } else {
     console.log(`Cannot join: playerName='${playerName.value}', roomId='${roomId.value}'`)
   }
@@ -515,6 +529,56 @@ const getDealerButtonPosition = () => {
 
 .join-section {
   margin-bottom: var(--space-8);
+}
+
+.connection-status {
+  text-align: center;
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.connection-status.connected {
+  background: rgba(40, 167, 69, 0.2);
+  border-color: #28a745;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--gray-300);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+}
+
+.status-dot.connected {
+  background: #28a745;
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
+.status-dot.disconnected {
+  background: #ff9500;
+  animation: pulse-orange 1s ease-in-out infinite;
+}
+
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes pulse-orange {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 .input-group {
@@ -845,8 +909,8 @@ const getDealerButtonPosition = () => {
 }
 
 .empty-card-slot {
-  width: 52px;
-  height: 72px;
+  width: 60px;
+  height: 84px;
   border: 2px dashed rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-sm);
   background: rgba(0, 0, 0, 0.1);
@@ -1218,4 +1282,3 @@ const getDealerButtonPosition = () => {
   }
 }
 </style>
- 

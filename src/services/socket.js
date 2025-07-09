@@ -120,7 +120,7 @@ class SocketService {
 
     console.log(`Attempting to join room: ${roomId} as ${playerName}`)
     this.socket.emit('joinRoom', { roomId, playerName })
-    this.currentRoom.value = roomId
+    this.currentRoom.value = roomId // Set immediately to track the room we're joining
     return true
   }
 

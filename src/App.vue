@@ -1,9 +1,9 @@
 <template>
-  <PokerTable />
+  <PokerTableNew />
 </template>
 
 <script setup>
-import PokerTable from './components/PokerTable.vue'
+import PokerTableNew from './components/PokerTableNew.vue'
 </script>
 
 <style>
