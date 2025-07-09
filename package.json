@@ -1,8 +1,28 @@
 {
   "name": "slopoker",
-  "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Advanced multiplayer Texas Hold'em poker game with modular architecture",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/slopoker.git"
+  },
+  "keywords": [
+    "poker",
+    "texas-holdem",
+    "multiplayer",
+    "realtime",
+    "vue",
+    "nodejs",
+    "socketio",
+    "game"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/slopoker/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/slopoker#readme",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
