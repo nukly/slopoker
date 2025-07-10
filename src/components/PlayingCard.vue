@@ -85,8 +85,8 @@ const displayRank = computed(() => {
 /* Professional Playing Card Design */
 
 .playing-card {
-  width: 52px;
-  height: 72px;
+  width: 64px;
+  height: 88px;
   border-radius: var(--radius-md);
   position: relative;
   cursor: pointer;
@@ -97,8 +97,8 @@ const displayRank = computed(() => {
 }
 
 .playing-card.community {
-  width: 60px;
-  height: 84px;
+  width: 72px;
+  height: 100px;
 }
 
 .playing-card:hover {
@@ -131,10 +131,12 @@ const displayRank = computed(() => {
 
 .card-face.red {
   color: #dc2626;
+  text-shadow: 0 0 1px rgba(220, 38, 38, 0.5);
 }
 
 .card-face.black {
   color: #1f2937;
+  text-shadow: 0 0 1px rgba(31, 41, 55, 0.5);
 }
 
 /* Card Corners */
@@ -146,6 +148,9 @@ const displayRank = computed(() => {
   font-weight: 700;
   line-height: 1;
   font-family: 'Georgia', serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 .card-corner.top-left {
@@ -160,23 +165,23 @@ const displayRank = computed(() => {
 }
 
 .card-corner .rank {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   margin-bottom: 1px;
 }
 
 .card-corner .suit {
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1;
 }
 
 /* Community card larger corners */
 .playing-card.community .card-corner .rank {
-  font-size: 12px;
+  font-size: 15px;
 }
 
 .playing-card.community .card-corner .suit {
-  font-size: 10px;
+  font-size: 13px;
 }
 
 /* Card Center */
@@ -191,14 +196,14 @@ const displayRank = computed(() => {
 }
 
 .suit-center {
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 400;
   opacity: 0.8;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
 .playing-card.community .suit-center {
-  font-size: 32px;
+  font-size: 40px;
 }
 
 /* Card Shine Effect */
@@ -269,7 +274,7 @@ const displayRank = computed(() => {
 }
 
 .back-logo {
-  font-size: 20px;
+  font-size: 26px;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 700;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
@@ -277,7 +282,7 @@ const displayRank = computed(() => {
 }
 
 .playing-card.community .back-logo {
-  font-size: 28px;
+  font-size: 36px;
 }
 
 /* Animations */

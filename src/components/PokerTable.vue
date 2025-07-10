@@ -475,7 +475,7 @@ const getDealerButtonPosition = () => {
   border-radius: var(--radius-2xl);
   border: 2px solid rgba(255, 215, 0, 0.3);
   padding: var(--space-10);
-  max-width: 600px;
+  max-width: 800px;
   width: 100%;
   box-shadow: var(--shadow-2xl);
 }
@@ -747,14 +747,16 @@ const getDealerButtonPosition = () => {
   justify-content: center;
   padding: var(--space-6);
   min-height: 70vh;
+  max-width: 50%;
 }
 
 .poker-table {
   position: relative;
   width: 100%;
-  max-width: 900px;
+  max-width: 700px;
   aspect-ratio: 1.4;
   max-height: 650px;
+  overflow: visible; /* Ensure cards at edges aren't clipped */
 }
 
 .table-felt {
@@ -768,7 +770,8 @@ const getDealerButtonPosition = () => {
     0 0 50px rgba(0, 0, 0, 0.5),
     0 0 100px rgba(0, 0, 0, 0.3);
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* Ensure cards aren't clipped at table edges */
+  z-index: 1; /* Explicit low z-index for table felt */
 }
 
 .table-felt::before {
@@ -789,6 +792,7 @@ const getDealerButtonPosition = () => {
   height: 100%;
   top: 0;
   left: 0;
+  z-index: 10; /* Above table felt but below cards */
 }
 
 /* Player position styles for 8-max table */

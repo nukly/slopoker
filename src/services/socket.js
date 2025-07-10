@@ -22,17 +22,30 @@ class SocketService {
     })
   }
 
-  connect(serverUrl = 'http://localhost:3001') {
+  connect(serverUrl) {
     if (this.socket && this.socket.connected) {
       return
     }
 
+    // Auto-detect server URL if not provided
+    if (!serverUrl) {
+      const hostname = window.location.hostname
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        serverUrl = 'http://localhost:3001'
+      } else {
+        // For mobile devices or other network access, use the detected IP
+        serverUrl = `http://${hostname}:3001`
+      }
+    }
+
+    console.log('Connecting to server:', serverUrl)
     this.socket = io(serverUrl, {
       autoConnect: true,
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-      timeout: 20000
+      reconnectionAttempts: 10,
+      timeout: 20000,
+      forceNew: true
     })
 
     this.setupEventListeners()
@@ -45,9 +58,25 @@ class SocketService {
       this.playerId.value = this.socket.id
     })
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from server')
+    this.socket.on('disconnect', (reason) => {
+      console.log('Disconnected from server. Reason:', reason)
       this.connected.value = false
+    })
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Connection error:', error)
+    })
+
+    this.socket.on('reconnect', (attemptNumber) => {
+      console.log('Reconnected after', attemptNumber, 'attempts')
+    })
+
+    this.socket.on('reconnect_error', (error) => {
+      console.error('Reconnection error:', error)
+    })
+
+    this.socket.on('reconnect_failed', () => {
+      console.error('Reconnection failed - giving up')
     })
 
     this.socket.on('playersUpdate', (players) => {

@@ -93,6 +93,9 @@
         </div>
         
         <div class="header-right">
+          <button @click="debugMode = !debugMode" class="btn btn-debug" :class="{ active: debugMode }">
+            <span>{{ debugMode ? 'Debug: ON' : 'Debug: OFF' }}</span>
+          </button>
           <button @click="handleLeaveGame" class="btn btn-leave">
             <span>Leave Table</span>
           </button>
@@ -114,7 +117,7 @@
                 :position="index"
                 :isActive="index === currentPlayerIndex"
                 :isHuman="player.socketId === currentPlayerId"
-                :showCards="gamePhase === 'showdown'"
+                :showCards="shouldShowCards(player)"
                 :class="`position-${index}`"
               />
             </div>
@@ -383,6 +386,23 @@ const playerInRoom = computed(() => {
   console.log('playerInRoom check:', { myPlayerExists, hasRoom, isConnected, myPlayer: myPlayer.value, currentRoom: socketService.currentRoom.value })
   return myPlayerExists && hasRoom && isConnected
 })
+
+// Debug mode for development - shows all cards
+const debugMode = ref(false) // Set to false for production
+
+const shouldShowCards = (player) => {
+  // Always show your own cards
+  if (player.socketId === currentPlayerId.value) return true
+  
+  // Show all cards in debug mode
+  if (debugMode.value) return true
+  
+  // Show cards during showdown
+  if (gamePhase.value === 'showdown') return true
+  
+  // Otherwise hide other players' cards
+  return false
+}
 
 // Actions
 const handleJoinGame = () => {
@@ -809,30 +829,34 @@ const getDealerButtonPosition = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-6);
-  min-height: 70vh;
+  padding: var(--space-8);
+  min-height: 75vh;
+  margin-top: 50px; /* Space for header */
+  position: relative;
+  overflow: visible; /* Ensure player elements aren't clipped */
 }
 
 .poker-table {
   position: relative;
   width: 100%;
-  max-width: 900px;
-  aspect-ratio: 1.4;
-  max-height: 650px;
+  max-width: 800px;
+  aspect-ratio: 1.6;
+  max-height: 700px;
+  margin: 80px auto; /* Increased margin to accommodate player info panels */
 }
 
 .table-felt {
   width: 100%;
   height: 100%;
-  background: radial-gradient(ellipse at center, var(--poker-felt-texture) 0%, var(--poker-green-main) 70%, var(--poker-green-dark) 100%);
+  background: radial-gradient(ellipse at center, #1a4d3a 0%, #0f2419 70%, #0a1a12 100%);
   border-radius: 50%;
-  border: 8px solid #8B4513;
+  border: 12px solid #8B4513;
   box-shadow: 
-    inset 0 0 50px rgba(0, 0, 0, 0.3),
-    0 0 50px rgba(0, 0, 0, 0.5),
-    0 0 100px rgba(0, 0, 0, 0.3);
+    inset 0 0 60px rgba(0, 0, 0, 0.4),
+    0 0 40px rgba(0, 0, 0, 0.6),
+    0 0 80px rgba(0, 0, 0, 0.3);
   position: relative;
-  overflow: hidden;
+  z-index: 1; /* Base layer */
 }
 
 .table-felt::before {
@@ -853,17 +877,66 @@ const getDealerButtonPosition = () => {
   height: 100%;
   top: 0;
   left: 0;
+  z-index: 5; /* Above table felt */
 }
 
-/* Player position styles for 8-max table */
-.position-0 { position: absolute; top: 50%; left: 5%; transform: translateY(-50%); }
-.position-1 { position: absolute; top: 20%; left: 15%; transform: translate(-50%, -50%); }
-.position-2 { position: absolute; top: 5%; left: 50%; transform: translate(-50%, -50%); }
-.position-3 { position: absolute; top: 20%; right: 15%; transform: translate(50%, -50%); }
-.position-4 { position: absolute; top: 50%; right: 5%; transform: translateY(-50%); }
-.position-5 { position: absolute; bottom: 20%; right: 15%; transform: translate(50%, 50%); }
-.position-6 { position: absolute; bottom: 5%; left: 50%; transform: translate(-50%, 50%); }
-.position-7 { position: absolute; bottom: 20%; left: 15%; transform: translate(-50%, 50%); }
+/* Professional Player Positioning for 8-max table */
+.position-0 { 
+  position: absolute; 
+  top: 55%; 
+  left: -24%; 
+  transform: translateY(-50%); 
+  z-index: 10;
+}
+.position-1 { 
+  position: absolute; 
+  top: 8%; 
+  left: 8%; 
+  transform: translate(-50%, -50%); 
+  z-index: 10;
+}
+.position-2 { 
+  position: absolute; 
+  top: -5%; 
+  left: 50%; 
+  transform: translate(-50%, -50%); 
+  z-index: 10;
+}
+.position-3 { 
+  position: absolute; 
+  top: 8%; 
+  right: 14%; 
+  transform: translate(50%, -50%); 
+  z-index: 10;
+}
+.position-4 { 
+  position: absolute; 
+  top: 55%; 
+  right: -12%; 
+  transform: translateY(-50%); 
+  z-index: 10;
+}
+.position-5 { 
+  position: absolute; 
+  bottom: 2%; 
+  right: 14%; 
+  transform: translate(50%, 50%); 
+  z-index: 10;
+}
+.position-6 { 
+  position: absolute; 
+  bottom: -7%; 
+  left: 50%; 
+  transform: translate(-50%, 50%); 
+  z-index: 10;
+}
+.position-7 { 
+  position: absolute; 
+  bottom: 0%; 
+  left: 8%; 
+  transform: translate(-50%, 50%); 
+  z-index: 10;
+}
 
 .community-area {
   position: absolute;
@@ -874,104 +947,154 @@ const getDealerButtonPosition = () => {
   flex-direction: column;
   align-items: center;
   gap: var(--space-4);
+  z-index: 8; /* Above table felt but below players */
 }
 
 .community-cards {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .board-label {
   color: var(--gold-primary);
-  font-weight: 600;
-  font-size: 0.875rem;
-  letter-spacing: 1px;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 2px;
   text-transform: uppercase;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .cards-container {
   display: flex;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 215, 0, 0.2);
+  gap: var(--space-3);
+  align-items: center;
 }
 
 .community-card {
   transition: all 0.3s ease;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
 .community-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
 }
 
 .empty-card-slot {
   width: 60px;
   height: 84px;
-  border: 2px dashed rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.1);
+  border: 2px dashed rgba(255, 215, 0, 0.4);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 215, 0, 0.3);
+  font-size: 1.5rem;
+}
+
+.empty-card-slot::before {
+  content: '?';
+  opacity: 0.5;
 }
 
 .pot-container {
   display: flex;
   justify-content: center;
+  margin-top: var(--space-2);
 }
 
 .pot-display {
-  background: rgba(0, 0, 0, 0.8);
-  border: 2px solid var(--gold-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3) var(--space-6);
+  background: rgba(0, 0, 0, 0.9);
+  border: 3px solid var(--gold-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-8);
   text-align: center;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+  backdrop-filter: blur(15px);
+  box-shadow: 
+    0 0 30px rgba(255, 215, 0, 0.4),
+    0 8px 32px rgba(0, 0, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+.pot-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .pot-label {
   color: var(--gold-primary);
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: var(--space-1);
+  letter-spacing: 1.5px;
+  margin-bottom: var(--space-2);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .pot-amount {
   color: var(--white);
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  font-size: 1.75rem;
+  font-weight: 800;
+  text-shadow: 0 2px 8px rgba(255, 215, 0, 0.6);
+  position: relative;
+  z-index: 1;
 }
 
 .dealer-button {
   position: absolute;
-  transition: all 0.5s ease;
-  z-index: 10;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 15; /* Above community cards */
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
 }
 
 .dealer-chip {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
-  border: 2px solid var(--white);
+  border: 3px solid var(--white);
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--black);
-  font-size: 0.875rem;
-  box-shadow: var(--shadow-lg);
-  animation: dealer-pulse 2s ease-in-out infinite;
+  font-size: 1.125rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 0 20px rgba(255, 215, 0, 0.6),
+    inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  animation: dealer-pulse 2.5s ease-in-out infinite;
 }
 
 @keyframes dealer-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 
+      0 0 20px rgba(255, 215, 0, 0.6),
+      inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  }
+  50% { 
+    transform: scale(1.1);
+    box-shadow: 
+      0 0 30px rgba(255, 215, 0, 0.8),
+      inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  }
 }
 
 /* ===== ACTION PANEL STYLES ===== */
@@ -1213,11 +1336,23 @@ const getDealerButtonPosition = () => {
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 1200px) {
+  .poker-table {
+    max-width: 850px;
+    margin: 50px auto;
+  }
+  
+  .table-area {
+    padding: var(--space-6);
+  }
+}
+
 @media (max-width: 768px) {
   .game-header {
     flex-direction: column;
     gap: var(--space-3);
     text-align: center;
+    padding: var(--space-3) var(--space-4);
   }
   
   .header-left,
@@ -1229,7 +1364,35 @@ const getDealerButtonPosition = () => {
   
   .poker-table {
     max-width: 100%;
-    aspect-ratio: 1;
+    aspect-ratio: 1.2;
+    margin: 40px auto;
+  }
+  
+  .table-area {
+    padding: var(--space-4);
+    min-height: 65vh;
+  }
+  
+  .community-cards {
+    padding: var(--space-3);
+  }
+  
+  .board-label {
+    font-size: 0.875rem;
+  }
+  
+  .pot-display {
+    padding: var(--space-3) var(--space-6);
+  }
+  
+  .pot-amount {
+    font-size: 1.5rem;
+  }
+  
+  .dealer-chip {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
   }
   
   .action-row {
@@ -1262,8 +1425,46 @@ const getDealerButtonPosition = () => {
 }
 
 @media (max-width: 480px) {
+  .poker-table {
+    aspect-ratio: 1;
+    margin: 30px auto;
+  }
+  
   .table-area {
     padding: var(--space-3);
+    min-height: 60vh;
+  }
+  
+  .table-felt {
+    border-width: 8px;
+  }
+  
+  .community-cards {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+  
+  .cards-container {
+    gap: var(--space-1);
+  }
+  
+  .empty-card-slot {
+    width: 45px;
+    height: 63px;
+  }
+  
+  .pot-display {
+    padding: var(--space-2) var(--space-4);
+  }
+  
+  .pot-amount {
+    font-size: 1.25rem;
+  }
+  
+  .dealer-chip {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
   }
   
   .action-panel {

@@ -1,6 +1,6 @@
 <template>
   <div class="player-seat-container">
-    <!-- Player Seat -->
+    <!-- Player Seat - Now contains cards -->
     <div class="player-seat" :class="{ 
       'active': isActive, 
       'folded': player.folded,
@@ -11,50 +11,49 @@
       <!-- Active Player Glow -->
       <div v-if="isActive" class="active-glow"></div>
       
-      <!-- Player Avatar -->
-      <div class="player-avatar">
-        <div class="avatar-ring">
-          <div class="avatar-inner">
-            {{ player.name.charAt(0).toUpperCase() }}
-          </div>
-        </div>
-        
-        <!-- Status Indicators -->
-        <div v-if="!player.isConnected" class="status-indicator disconnected">
-          <span class="status-icon">⚠</span>
-        </div>
-        <div v-else-if="player.folded" class="status-indicator folded">
-          <span class="status-icon">✖</span>
-        </div>
-        <div v-else-if="player.chips === 0" class="status-indicator all-in">
-          <span class="status-icon">🎯</span>
-        </div>
-        <div v-else-if="isActive" class="status-indicator active">
-          <span class="status-icon">⏳</span>
-        </div>
+      <!-- Player Cards (now in main seat area) -->
+      <div v-if="player.cards && player.cards.length > 0" class="player-cards">
+        <PlayingCard 
+          v-for="(card, index) in player.cards"
+          :key="`${player.id}-${index}`"
+          :card="card"
+          :visible="showCards"
+          :class="`card-${index}`"
+          class="player-card"
+        />
       </div>
       
-      <!-- Player Info Panel -->
-      <div class="player-info">
-        <div class="player-name">{{ player.name }}</div>
-        <div class="player-chips">${{ player.chips.toLocaleString() }}</div>
-        <div v-if="player.bet > 0" class="player-bet">
-          <span class="bet-label">Bet:</span>
-          <span class="bet-amount">${{ player.bet.toLocaleString() }}</span>
-        </div>
+      <!-- Empty seat placeholder when no cards -->
+      <div v-else class="empty-seat">
+        <div class="seat-placeholder">{{ player.name.charAt(0).toUpperCase() }}</div>
+      </div>
+      
+      <!-- Status Indicators -->
+      <div v-if="!player.isConnected" class="status-indicator disconnected">
+        <span class="status-icon">⚠</span>
+      </div>
+      <div v-else-if="player.folded" class="status-indicator folded">
+        <span class="status-icon">✖</span>
+      </div>
+      <div v-else-if="player.chips === 0" class="status-indicator all-in">
+        <span class="status-icon">🎯</span>
+      </div>
+      <div v-else-if="isActive" class="status-indicator active">
+        <span class="status-icon">⏳</span>
       </div>
     </div>
 
-    <!-- Player Cards (positioned relative to seat) -->
-    <div v-if="player.cards && player.cards.length > 0" class="player-cards">
-      <PlayingCard 
-        v-for="(card, index) in player.cards"
-        :key="`${player.id}-${index}`"
-        :card="card"
-        :visible="isHuman || showCards"
-        :class="`card-${index}`"
-        class="player-card"
-      />
+    <!-- Player Info Panel (with small avatar circle) -->
+    <div class="player-info">
+      <div class="player-header">
+        <div class="mini-avatar">{{ player.name.charAt(0).toUpperCase() }}</div>
+        <div class="player-name">{{ player.name }}</div>
+      </div>
+      <div class="player-chips">${{ player.chips.toLocaleString() }}</div>
+      <div v-if="player.bet > 0" class="player-bet">
+        <span class="bet-label">Bet:</span>
+        <span class="bet-amount">${{ player.bet.toLocaleString() }}</span>
+      </div>
     </div>
     
     <!-- Bet Chips (when player has bet) -->
@@ -104,23 +103,26 @@ const props = defineProps({
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
+  z-index: 20; /* Above table felt */
+  width: 120px; /* Fixed width to prevent layout issues */
 }
 
 .player-seat {
   position: relative;
-  width: 100px;
-  height: 100px;
-  border-radius: var(--radius-2xl);
-  background: rgba(0, 0, 0, 0.8);
-  border: 3px solid rgba(255, 255, 255, 0.2);
+  width: 120px;
+  height: 80px;
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.9);
+  border: 3px solid rgba(255, 255, 255, 0.3);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
+  backdrop-filter: blur(15px);
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: visible; /* Allow cards to extend beyond seat */
 }
 
 .player-seat::before {
@@ -212,7 +214,7 @@ const props = defineProps({
   left: -5px;
   right: -5px;
   bottom: -5px;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-lg);
   background: linear-gradient(45deg, var(--gold-primary), var(--gold-light), var(--gold-primary));
   z-index: -1;
   animation: rotate-glow 3s linear infinite;
@@ -223,61 +225,64 @@ const props = defineProps({
   100% { transform: rotate(360deg); }
 }
 
-/* Player Avatar */
-.player-avatar {
+/* Player Cards in Main Seat Area */
+.player-cards {
+  display: flex;
+  gap: -12px;
+  z-index: 30; /* Above everything else */
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+}
+
+.player-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: bottom center;
   position: relative;
+}
+
+.card-0 {
+  transform: rotate(-8deg);
+  z-index: 32;
+}
+
+.card-1 {
+  transform: rotate(8deg);
+  z-index: 31;
+}
+
+.player-cards:hover .player-card {
+  transform: translateY(-4px) rotate(0deg);
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.5));
+}
+
+/* Empty Seat Placeholder */
+.empty-seat {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
 }
 
-.avatar-ring {
-  width: 70px;
-  height: 70px;
+.seat-placeholder {
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  box-shadow: var(--shadow-md);
-}
-
-.player-seat.human .avatar-ring {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-}
-
-.player-seat.folded .avatar-ring {
-  background: linear-gradient(135deg, var(--gray-500) 0%, var(--gray-600) 100%);
-}
-
-.player-seat.disconnected .avatar-ring {
-  background: linear-gradient(135deg, var(--red-primary) 0%, var(--red-dark) 100%);
-}
-
-.player-seat.all-in .avatar-ring {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
-}
-
-.avatar-inner {
-  width: 60px;
-  height: 60px;
-  border-radius: var(--radius-full);
-  background: rgba(0, 0, 0, 0.8);
-  color: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* Status Indicators */
 .status-indicator {
   position: absolute;
-  top: -5px;
-  right: -5px;
+  top: -8px;
+  right: -8px;
   width: 24px;
   height: 24px;
   border-radius: var(--radius-full);
@@ -286,7 +291,10 @@ const props = defineProps({
   justify-content: center;
   font-size: 0.75rem;
   border: 2px solid var(--white);
-  box-shadow: var(--shadow-md);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  z-index: 35; /* Above cards */
 }
 
 .status-indicator.active {
@@ -317,40 +325,112 @@ const props = defineProps({
 
 /* Player Info */
 .player-info {
-  position: absolute;
-  bottom: -45px;
-  left: 50%;
-  transform: translateX(-50%);
   text-align: center;
-  background: rgba(0, 0, 0, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+  border: 2px solid rgba(255, 215, 0, 0.5);
   border-radius: var(--radius-lg);
   padding: var(--space-2) var(--space-3);
-  backdrop-filter: blur(10px);
-  min-width: 100px;
-  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(15px);
+  min-width: 110px;
+  max-width: 140px;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.6),
+    0 0 15px rgba(255, 215, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  z-index: 25; /* Ensure info panel is visible */
+  margin-top: var(--space-3); /* Add some space between seat and info */
+  position: relative;
+}
+
+.player-info::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, transparent 50%);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+}
+
+.player-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.mini-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--black);
+  text-shadow: none;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.player-seat.human .mini-avatar {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: var(--white);
+}
+
+.player-seat.folded .mini-avatar {
+  background: linear-gradient(135deg, var(--gray-500) 0%, var(--gray-600) 100%);
+  color: var(--white);
+}
+
+.player-seat.disconnected .mini-avatar {
+  background: linear-gradient(135deg, var(--red-primary) 0%, var(--red-dark) 100%);
+  color: var(--white);
+}
+
+.player-seat.all-in .mini-avatar {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  color: var(--white);
 }
 
 .player-name {
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--white);
-  margin-bottom: var(--space-1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  z-index: 1;
+  flex: 1;
 }
 
 .player-chips {
-  font-size: 0.75rem;
-  color: var(--gold-light);
+  font-size: 0.8rem;
+  color: var(--gold-primary);
   font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  position: relative;
+  z-index: 1;
 }
 
 .player-bet {
   display: flex;
   justify-content: space-between;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   margin-top: var(--space-1);
   padding-top: var(--space-1);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 215, 0, 0.3);
+  position: relative;
+  z-index: 1;
 }
 
 .bet-label {
@@ -362,142 +442,156 @@ const props = defineProps({
   font-weight: 600;
 }
 
-/* Player Cards */
-.player-cards {
-  display: flex;
-  gap: -10px;
-  position: absolute;
-  top: -40px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 5;
-}
-
-.player-card {
-  transition: all 0.3s ease;
-  transform-origin: bottom center;
-}
-
-.card-0 {
-  transform: rotate(-5deg);
-  z-index: 2;
-}
-
-.card-1 {
-  transform: rotate(5deg);
-  z-index: 1;
-}
-
-.player-cards:hover .player-card {
-  transform: translateY(-10px) rotate(0deg);
-}
-
 /* Bet Chips */
 .bet-chips {
   position: absolute;
   top: -20px;
-  left: 120%;
+  left: 105%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-1);
-  z-index: 3;
+    gap: var(--space-2);
+    z-index: 25;
+    min-width: 60px;
 }
 
 .chip-stack {
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
 }
 
 .chip {
-  width: 20px;
-  height: 8px;
+  width: 22px;
+  height: 7px;
   border-radius: var(--radius-full);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  margin-top: -4px;
-  box-shadow: var(--shadow-sm);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  margin-top: -2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .chip-gold {
   background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .bet-amount-display {
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.95);
   color: var(--gold-primary);
   font-size: 0.75rem;
   font-weight: 700;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--gold-primary);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--gold-primary);
   white-space: nowrap;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 
+    0 2px 12px rgba(0, 0, 0, 0.5),
+    0 0 15px rgba(255, 215, 0, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .player-seat-container {
+    width: 100px;
+  }
+  
   .player-seat {
-    width: 80px;
-    height: 80px;
-  }
-  
-  .avatar-ring {
-    width: 55px;
-    height: 55px;
-  }
-  
-  .avatar-inner {
-    width: 45px;
-    height: 45px;
-    font-size: 1.25rem;
+    width: 100px;
+    height: 70px;
   }
   
   .player-info {
-    bottom: -40px;
+    padding: var(--space-2) var(--space-3);
+    min-width: 95px;
+    max-width: 120px;
+  }
+  
+  .player-name {
+    font-size: 0.8rem;
+  }
+  
+  .player-chips {
+    font-size: 0.75rem;
+  }
+  
+  .bet-chips {
+    left: 100%;
+    top: -15px;
+  }
+  
+  .mini-avatar {
+    width: 18px;
+    height: 18px;
+    font-size: 0.6rem;
+  }
+  
+  .chip {
+    width: 20px;
+    height: 6px;
+  }
+  
+  .bet-amount-display {
+    font-size: 0.7rem;
     padding: var(--space-1) var(--space-2);
+  }
+}
+
+@media (max-width: 480px) {
+  .player-seat-container {
+    width: 85px;
+  }
+  
+  .player-seat {
+    width: 85px;
+    height: 60px;
+  }
+  
+  .status-indicator {
+    width: 18px;
+    height: 18px;
+    font-size: 0.6rem;
+    top: -6px;
+    right: -6px;
+  }
+  
+  .player-info {
+    padding: var(--space-2);
     min-width: 80px;
+    max-width: 100px;
   }
   
   .player-name {
     font-size: 0.75rem;
   }
   
-  .player-chips,
-  .player-bet {
-    font-size: 0.625rem;
+  .player-chips {
+    font-size: 0.7rem;
   }
   
   .bet-chips {
-    left: 110%;
-  }
-}
-
-@media (max-width: 480px) {
-  .player-seat {
-    width: 60px;
-    height: 60px;
+    left: 95%;
+    top: -12px;
   }
   
-  .avatar-ring {
-    width: 40px;
-    height: 40px;
+  .mini-avatar {
+    width: 16px;
+    height: 16px;
+    font-size: 0.55rem;
   }
   
-  .avatar-inner {
-    width: 32px;
-    height: 32px;
-    font-size: 1rem;
-  }
-  
-  .status-indicator {
+  .chip {
     width: 18px;
-    height: 18px;
-    font-size: 0.625rem;
+    height: 5px;
   }
   
-  .player-cards {
-    top: -30px;
+  .bet-amount-display {
+    font-size: 0.65rem;
+    padding: 2px var(--space-1);
   }
 }
 </style>
